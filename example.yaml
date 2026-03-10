@@ -1,0 +1,249 @@
+substitutions:
+  name: "ld2411s-presence"
+  friendly_name: "LD2411S Presence"
+
+esphome:
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+
+esp32:
+  variant: esp32
+  framework:
+    type: esp-idf  # Recommended: better FreeRTOS integration, reliable WiFi stack, stricter watchdog
+
+external_components:
+  - source: github://DAB-LABS/esphome-ld2411s
+    components: [ld2411s]
+
+# WiFi — fill in your credentials or use !secret
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# ─── UART ────────────────────────────────────────────────────────────────────
+# TXD (green) → GPIO16 (RX)
+# RXD (blue)  → GPIO17 (TX)
+# VIN (red)   → ESP32 VIN (5V — not 3.3V)
+# GND (black) → GND
+uart:
+  id: uart_bus
+  tx_pin: GPIO17
+  rx_pin: GPIO16
+  baud_rate: 256000
+  parity: NONE
+  stop_bits: 1
+
+# ─── LD2411S COMPONENT ───────────────────────────────────────────────────────
+ld2411s:
+  uart_id: uart_bus
+
+  distance:
+    name: "Target Distance"
+    unit_of_measurement: cm
+
+  presence:
+    name: "Presence"
+    device_class: occupancy
+    filters:
+      - delayed_off: 10s   # Prevents flickering when person leaves
+
+  motion:
+    name: "Motion"
+    device_class: motion
+    filters:
+      - delayed_off: 5s
+
+# ─── RUNTIME ZONE CONTROLS ───────────────────────────────────────────────────
+# Adjust detection zones from HA without reflashing.
+#
+# HOW IT WORKS:
+# - Slider release commits the value to the HA entity (visible in HA activity log)
+#   but does NOT yet send a command to the radar.
+# - Press "Apply Settings" once after adjusting all values to push the full
+#   configuration to the radar in a single command.
+#
+# DISPLAY MODE:
+# Each number entity defaults to "slider" mode. For precise numeric input,
+# change mode to "box". This replaces the slider with a text input field.
+# To use both, see the numberbox-card HACS custom card.
+#
+#   mode: slider   # default — drag to adjust
+#   mode: box      # text input for precise values
+#
+# WARNING — RADAR LOCK-UP:
+# Rapid or repeated zone changes can cause the radar to stop responding.
+# Symptoms: sensors freeze at last known state, or Presence/Motion/Distance
+# go unavailable while other ESP sensors remain online.
+# Fix: press "Reboot Radar". ESPHome restart alone will NOT fix this.
+# Best practice: set all values, press Apply once, then leave it.
+#
+# Minimum hardware value: 30 cm.
+number:
+  - platform: template
+    name: "Motion Zone Min"
+    id: motion_zone_min
+    min_value: 30
+    max_value: 800
+    step: 10
+    initial_value: 30
+    unit_of_measurement: cm
+    mode: slider   # change to "box" for text input
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: mdi:radar
+
+  - platform: template
+    name: "Motion Zone Max"
+    id: motion_zone_max
+    min_value: 30
+    max_value: 800
+    step: 10
+    initial_value: 300
+    unit_of_measurement: cm
+    mode: slider   # change to "box" for text input
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: mdi:radar
+
+  - platform: template
+    name: "Presence Zone Min"
+    id: presence_zone_min
+    min_value: 30
+    max_value: 800
+    step: 10
+    initial_value: 30
+    unit_of_measurement: cm
+    mode: slider   # change to "box" for text input
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: mdi:radar
+
+  - platform: template
+    name: "Presence Zone Max"
+    id: presence_zone_max
+    min_value: 30
+    max_value: 800
+    step: 10
+    initial_value: 300
+    unit_of_measurement: cm
+    mode: slider   # change to "box" for text input
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: mdi:radar
+
+  - platform: template
+    name: "Unoccupied Timeout"
+    id: unoccupied_timeout
+    min_value: 0
+    max_value: 65535
+    step: 1
+    initial_value: 5
+    unit_of_measurement: s
+    mode: box      # box recommended here — wide range makes slider impractical
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: mdi:timer-outline
+
+# ─── BUTTONS ─────────────────────────────────────────────────────────────────
+button:
+  - platform: template
+    name: "Apply Settings"
+    icon: mdi:content-save
+    on_press:
+      - lambda: |-
+          id(ld2411s_component).set_config(
+            (int)id(motion_zone_min).state,
+            (int)id(motion_zone_max).state,
+            (int)id(presence_zone_min).state,
+            (int)id(presence_zone_max).state,
+            (int)id(unoccupied_timeout).state
+          );
+
+  - platform: template
+    name: "Reboot Radar"
+    icon: mdi:restart
+    entity_category: diagnostic
+    on_press:
+      - lambda: |-
+          id(ld2411s_component).reboot();
+
+  - platform: template
+    name: "Factory Reset Radar"
+    icon: mdi:restore
+    entity_category: diagnostic
+    on_press:
+      - lambda: |-
+          id(ld2411s_component).factory_reset();
+
+  - platform: restart
+    name: "Restart"
+    icon: mdi:restart
+    entity_category: diagnostic
+
+# ─── CRASH DIAGNOSTICS ───────────────────────────────────────────────────────
+# Exposes reset reason and heap health as HA entities.
+# If you see "Reset Reason: power-on event" repeating, check your power supply.
+# Combined peak draw from the ESP32 and LD2411S can reach several hundred mA —
+# enough to cause voltage sag on a marginal supply. Try a 2A supply if unstable.
+# See README for full Reset Reason reference table.
+debug:
+  update_interval: 30s
+
+text_sensor:
+  - platform: debug
+    reset_reason:
+      name: "Reset Reason"
+      entity_category: diagnostic
+
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
+    ssid:
+      name: "SSID"
+      entity_category: diagnostic
+    bssid:
+      name: "BSSID"
+      entity_category: diagnostic
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+      entity_category: diagnostic
+    block:
+      name: "Heap Max Block"
+      entity_category: diagnostic
+    loop_time:
+      name: "Loop Time"
+      entity_category: diagnostic
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: uptime
+    name: "Uptime"
+    entity_category: diagnostic
