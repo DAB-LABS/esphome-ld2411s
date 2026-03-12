@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  compile:
+    name: Compile example.yaml
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ESPHome
+        run: pip install esphome
+
+      - name: Write secrets stub
+        run: |
+          cat > secrets.yaml <<EOF
+          wifi_ssid: "test_network"
+          wifi_password: "test_password"
+          EOF
+
+      - name: Compile
+        run: esphome compile example.yaml
