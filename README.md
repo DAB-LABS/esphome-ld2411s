@@ -169,7 +169,33 @@ To change the input mode, add `mode: box` (or `mode: slider`) to any number enti
   ...
 ```
 
-The unoccupied timeout (0–65535 range) defaults to `box` in the example YAML, as a slider across that range is impractical.
+The unoccupied timeout (0–6553 range) defaults to `box` in the example YAML, as a slider across that range is impractical.
+
+### Unoccupied Timeout — How It Works
+
+The **Unoccupied Timeout** entity is in **seconds** (0–6553 s). Internally, the component multiplies your value by 10 before sending it to the radar, because the protocol uses **100ms units** (range 0–65535 units). So a setting of `10 s` sends `100` to the hardware.
+
+> Protocol unit = seconds × 10. Max supported value: 6553 s (~109 minutes).
+
+### Presence Clear Time — Two Layers
+
+The example YAML includes a software `delayed_off` filter on top of the hardware timeout:
+
+```yaml
+presence:
+  filters:
+    - delayed_off: 10s
+motion:
+  filters:
+    - delayed_off: 5s
+```
+
+This means presence clears in HA after **two delays have elapsed**:
+
+1. **Hardware unoccupied timeout** — the radar waits this long after the last detection before sending a "no target" frame over UART (default: 10 s)
+2. **ESPHome `delayed_off` filter** — ESPHome holds the binary sensor `on` for an additional delay after receiving the "no target" frame (default: 10 s for presence, 5 s for motion)
+
+With the defaults, presence won't clear in HA until approximately **20 seconds** after the last detected target, and motion until approximately **15 seconds**. Adjust either or both to tune responsiveness vs. false-off behavior for your use case.
 
 If you want **both a slider and a text input** in the same card, the [`numberbox-card`](https://github.com/htmltiger/numberbox-card) HACS custom card renders both together and works with any existing `number` entity — no ESPHome changes needed.
 
