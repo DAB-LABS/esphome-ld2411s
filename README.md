@@ -1,5 +1,7 @@
 # esphome-ld2411s
 
+![HLK-LD2411S ESPHome Component](docs/2411s-readme-header.jpg)
+
 [![CI](https://github.com/DAB-LABS/esphome-ld2411s/actions/workflows/ci.yml/badge.svg)](https://github.com/DAB-LABS/esphome-ld2411s/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/DAB-LABS/esphome-ld2411s)](https://github.com/DAB-LABS/esphome-ld2411s/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
