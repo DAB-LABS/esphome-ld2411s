@@ -23,7 +23,7 @@ jobs:
           cat > secrets.yaml <<EOF
           wifi_ssid: "test_network"
           wifi_password: "test_password"
-          api_key: "Qx1FBLKZeHq6kDBVdmh1/N94LJoyvFhYr4YqX4I8vPc="
+          api_encryption_key: "Qx1FBLKZeHq6kDBVdmh1/N94LJoyvFhYr4YqX4I8vPc="
           ota_password: "testpassword"
           EOF
 
