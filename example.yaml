@@ -29,11 +29,11 @@ logger:
 
 api:
   encryption:
-    key: !secret api_key
+    key: !secret api_encryption_key  # Generate one at https://esphome.io/components/api.html
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    password: !secret ota_password   # Or remove password: line entirely for no OTA auth
 
 # ─── UART ────────────────────────────────────────────────────────────────────
 # TXD (green) → GPIO16 (RX)
@@ -157,29 +157,42 @@ number:
 # The LD2411S has onboard BLE (used by the HLKRadarTool app for configuration).
 # This switch lets you enable or disable it from HA without the app.
 #
-# IMPORTANT: Toggling BT requires a radar reboot to take effect.
-# The switch action sends the BT command and immediately reboots the radar —
-# sensors will be unavailable for a few seconds while it restarts.
+# Toggling BT requires a radar reboot to take effect — sensors will be
+# unavailable for a few seconds while it restarts. This is expected.
 #
-# The switch is optimistic (no read-back over UART) and restores to ON by
-# default, matching the factory default state of the radar.
+# The switch is optimistic (no read-back over UART) and defaults to OFF —
+# the LD2411S ships with Bluetooth disabled from the factory.
+#
+# SEQUENCE: Enter config → set BT → End config (commits to radar flash)
+#           → re-enter config → Reboot (reboot only fires inside config mode)
+# End config MUST precede the reboot, otherwise the setting is lost on restart.
 switch:
   - platform: template
     name: "Radar Bluetooth"
     id: radar_bluetooth
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
     icon: mdi:bluetooth
     turn_on_action:
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT on
-      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config (commits to flash)
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Re-enter config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
     turn_off_action:
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT off
-      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config (commits to flash)
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Re-enter config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
 
 # ─── BUTTONS ─────────────────────────────────────────────────────────────────

@@ -219,11 +219,16 @@ This appears to be a radar firmware issue — the sensor's internal state gets c
 
 ## Bluetooth
 
-The LD2411S has onboard BLE used by the **HLKRadarTool** app (iOS/Android) for wireless parameter configuration and firmware updates. BLE is **on by default** from the factory.
+The LD2411S has onboard BLE used by the **HLKRadarTool** app (iOS/Android) for wireless parameter configuration and firmware updates. BLE is **off by default** from the factory on the LD2411S (unlike the LD2410 which defaults to on).
 
 The example YAML exposes a **Radar Bluetooth** switch in Home Assistant that lets you toggle BLE on or off without opening the app.
 
-### Why you might want to turn it off
+### Why you might want to turn it on
+
+- Use HLKRadarTool over BLE to inspect or adjust radar parameters without serial access
+- Firmware updates to the radar module
+
+### Why you might want to leave it off
 
 - Reduces RF noise if you're running ESPresense or other BLE tracking alongside this sensor
 - Slightly reduces idle power draw
@@ -231,7 +236,7 @@ The example YAML exposes a **Radar Bluetooth** switch in Home Assistant that let
 
 ### How the switch works
 
-The switch sends command `0x00A4` over UART with a value of `0x0100` (on) or `0x0000` (off), framed with the standard enable/end configuration sequence. After sending the command, the radar is immediately rebooted (`0x00A3`) — the protocol requires a reboot for the BT change to take effect.
+The switch sends command `0x00A4` over UART with a value of `0x0100` (on) or `0x0000` (off). The sequence requires two phases: first commit the setting to radar flash via `End config`, then re-enter config mode and send the reboot command — the radar only accepts reboot while inside a config session.
 
 ```yaml
 switch:
@@ -239,18 +244,28 @@ switch:
     name: "Radar Bluetooth"
     id: radar_bluetooth
     optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
+    restore_mode: RESTORE_DEFAULT_OFF
     entity_category: config
     icon: mdi:bluetooth
     turn_on_action:
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT on
-      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config (commits to flash)
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Re-enter config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
     turn_off_action:
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT off
-      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config (commits to flash)
+      - delay: 200ms
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Re-enter config
+      - delay: 100ms
       - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
 ```
 
@@ -258,7 +273,8 @@ switch:
 
 - **Toggling BT reboots the radar.** Sensors will be unavailable for a few seconds while it restarts — this is expected.
 - **The switch is optimistic.** HA state updates immediately on toggle but is not confirmed over UART. The actual BT state is only verifiable by checking whether HLKRadarTool can discover the sensor over BLE.
-- **Restore mode is `RESTORE_DEFAULT_ON`** — on first boot the switch defaults to ON, matching the radar's factory default. Subsequent boots restore the last known state from flash.
+- **`End config` must precede the reboot.** Without it, the BT setting is written to RAM only and is lost when the radar restarts. The two-phase sequence (commit, then reboot inside a fresh config session) is required for the change to persist.
+- **Restore mode is `RESTORE_DEFAULT_OFF`** — matches the LD2411S factory default. Subsequent boots restore the last known state from ESP NVS flash.
 
 ---
 

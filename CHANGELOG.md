@@ -9,15 +9,17 @@ This project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased] — v1.1.0
 
 ### Added
-- **Radar Bluetooth switch** — toggle onboard BLE on/off from Home Assistant without the HLKRadarTool app. Sends protocol command `0x00A4` and automatically reboots the radar for the change to take effect. Optimistic state with `RESTORE_DEFAULT_ON` to match factory default.
+- **Radar Bluetooth switch** — toggle onboard BLE on/off from Home Assistant without the HLKRadarTool app. Uses protocol command `0x00A4` followed by a two-phase commit sequence: `End config` (writes to radar flash) → re-enter config → `Reboot`. Defaults to OFF matching the LD2411S factory default.
 - Documented that the OUT pin is hardwired to GND in LD2411S firmware and cannot be used as a presence output
 
 ### Fixed
 - **`example.yaml` buttons broken** — Apply Settings, Reboot Radar, and Factory Reset buttons referenced nonexistent C++ methods (`ld2411s_component.set_config()`, `.reboot()`, `.factory_reset()`) that were never implemented in the component. Replaced with raw `uart.write` commands and a `script` block matching the working implementation. Fixes [#1](https://github.com/DAB-LABS/esphome-ld2411s/issues/1).
+- **Bluetooth toggle only worked in one direction** — BT ON worked but BT OFF had no effect. Root cause: without `End config` between the BT command and the reboot, the setting was only in RAM and lost on restart. Fixed by committing via `End config` before rebooting.
 
 ### Changed
 - `example.yaml` now includes the Radar Bluetooth switch
 - README updated with full Bluetooth section, OUT pin clarification, and unoccupied timeout / delayed_off explanation
+- BT switch `restore_mode` changed from `RESTORE_DEFAULT_ON` to `RESTORE_DEFAULT_OFF` — the LD2411S ships with Bluetooth disabled; previous setting caused switch to show ON on first boot while hardware was OFF
 
 ---
 
