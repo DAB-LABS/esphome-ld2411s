@@ -20,6 +20,7 @@ The LD2411S provides independent **motion** and **presence** detection with conf
 - Configurable unoccupied timeout
 - Apply settings at runtime from Home Assistant — no reflash required
 - Radar reboot and factory reset buttons
+- **Bluetooth toggle** — enable/disable onboard BLE from Home Assistant
 - Tested on ESP32-WROOM-32 with ESPHome 2026.2.4 and ESP-IDF framework
 
 ---
@@ -50,7 +51,9 @@ Available from Hi-Link and common electronics suppliers.
 | GND | Black | GND | |
 | TXD | Green | GPIO16 (RX) | |
 | RXD | Blue | GPIO17 (TX) | |
-| OUT | Yellow | Not connected | Optional binary output — not needed with this component |
+| OUT | Yellow | Not connected | Reserved — see note below |
+
+> **⚠️ The LD2411S OUT pin is not functional.** Despite the label, this pin is hardwired to GND in the LD2411S firmware and does not toggle with presence or motion. Community testing has confirmed it stays low at all times. Do not connect it.
 
 > **⚠️ The LD2411S requires 5V on VIN.** Wiring it to the ESP32's 3V3 pin will result in the sensor powering on but producing no UART output.
 
@@ -147,7 +150,7 @@ The example YAML exposes `number` entities in Home Assistant for adjusting zones
    - Each slider release commits the value to the HA entity — you'll see this reflected in the HA activity log (e.g., `Motion Zone Max changed to 300`). This updates HA's local state but does **not yet** send a command to the radar.
 
 2. **Press Apply Settings** once you've finished adjusting all values.
-   - This triggers the `set_config()` call that sends the full zone configuration to the radar in a single command. Set everything first, then apply once — there's no need to press Apply after each individual slider.
+   - This executes the `send_config` script, which sends the full zone configuration to the radar in a single UART command. Set everything first, then apply once — there's no need to press Apply after each individual slider.
 
 3. **Verify** by observing the Distance, Presence, and Motion entities respond from within the new zone boundaries.
 
@@ -211,6 +214,51 @@ This appears to be a radar firmware issue — the sensor's internal state gets c
 **Fix:** Press the **Reboot Radar** button in Home Assistant. Sensors typically recover within a few seconds. Factory reset is not required.
 
 > **Best practice:** Make all zone adjustments, press Apply Settings once, then leave it. Avoid sliding and applying repeatedly in quick succession.
+
+---
+
+## Bluetooth
+
+The LD2411S has onboard BLE used by the **HLKRadarTool** app (iOS/Android) for wireless parameter configuration and firmware updates. BLE is **on by default** from the factory.
+
+The example YAML exposes a **Radar Bluetooth** switch in Home Assistant that lets you toggle BLE on or off without opening the app.
+
+### Why you might want to turn it off
+
+- Reduces RF noise if you're running ESPresense or other BLE tracking alongside this sensor
+- Slightly reduces idle power draw
+- Removes an unnecessary radio if you're never going to use the HLKRadarTool app
+
+### How the switch works
+
+The switch sends command `0x00A4` over UART with a value of `0x0100` (on) or `0x0000` (off), framed with the standard enable/end configuration sequence. After sending the command, the radar is immediately rebooted (`0x00A3`) — the protocol requires a reboot for the BT change to take effect.
+
+```yaml
+switch:
+  - platform: template
+    name: "Radar Bluetooth"
+    id: radar_bluetooth
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    icon: mdi:bluetooth
+    turn_on_action:
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT on
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
+    turn_off_action:
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT off
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
+```
+
+### Important notes
+
+- **Toggling BT reboots the radar.** Sensors will be unavailable for a few seconds while it restarts — this is expected.
+- **The switch is optimistic.** HA state updates immediately on toggle but is not confirmed over UART. The actual BT state is only verifiable by checking whether HLKRadarTool can discover the sensor over BLE.
+- **Restore mode is `RESTORE_DEFAULT_ON`** — on first boot the switch defaults to ON, matching the radar's factory default. Subsequent boots restore the last known state from flash.
 
 ---
 

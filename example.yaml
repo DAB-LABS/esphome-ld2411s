@@ -22,7 +22,6 @@ wifi:
 
   ap:
     ssid: "${friendly_name} Fallback"
-    password: !secret ap_password
 
 captive_portal:
 
@@ -78,14 +77,6 @@ ld2411s:
 # - Press "Apply Settings" once after adjusting all values to push the full
 #   configuration to the radar in a single command.
 #
-# DISPLAY MODE:
-# Each number entity defaults to "slider" mode. For precise numeric input,
-# change mode to "box". This replaces the slider with a text input field.
-# To use both, see the numberbox-card HACS custom card.
-#
-#   mode: slider   # default — drag to adjust
-#   mode: box      # text input for precise values
-#
 # WARNING — RADAR LOCK-UP:
 # Rapid or repeated zone changes can cause the radar to stop responding.
 # Symptoms: sensors freeze at last known state, or Presence/Motion/Distance
@@ -103,7 +94,6 @@ number:
     step: 10
     initial_value: 30
     unit_of_measurement: cm
-    mode: slider   # change to "box" for text input
     optimistic: true
     restore_value: true
     entity_category: config
@@ -117,7 +107,6 @@ number:
     step: 10
     initial_value: 300
     unit_of_measurement: cm
-    mode: slider   # change to "box" for text input
     optimistic: true
     restore_value: true
     entity_category: config
@@ -131,7 +120,6 @@ number:
     step: 10
     initial_value: 30
     unit_of_measurement: cm
-    mode: slider   # change to "box" for text input
     optimistic: true
     restore_value: true
     entity_category: config
@@ -145,7 +133,6 @@ number:
     step: 10
     initial_value: 300
     unit_of_measurement: cm
-    mode: slider   # change to "box" for text input
     optimistic: true
     restore_value: true
     entity_category: config
@@ -159,11 +146,41 @@ number:
     step: 1
     initial_value: 5
     unit_of_measurement: s
-    mode: box      # box recommended here — wide range makes slider impractical
     optimistic: true
     restore_value: true
     entity_category: config
     icon: mdi:timer-outline
+
+# ─── SWITCHES ────────────────────────────────────────────────────────────────
+# Radar Bluetooth toggle.
+#
+# The LD2411S has onboard BLE (used by the HLKRadarTool app for configuration).
+# This switch lets you enable or disable it from HA without the app.
+#
+# IMPORTANT: Toggling BT requires a radar reboot to take effect.
+# The switch action sends the BT command and immediately reboots the radar —
+# sensors will be unavailable for a few seconds while it restarts.
+#
+# The switch is optimistic (no read-back over UART) and restores to ON by
+# default, matching the factory default state of the radar.
+switch:
+  - platform: template
+    name: "Radar Bluetooth"
+    id: radar_bluetooth
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    icon: mdi:bluetooth
+    turn_on_action:
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT on
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
+    turn_off_action:
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xA4, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01]  # BT off
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot radar
 
 # ─── BUTTONS ─────────────────────────────────────────────────────────────────
 button:
@@ -171,35 +188,57 @@ button:
     name: "Apply Settings"
     icon: mdi:content-save
     on_press:
-      - lambda: |-
-          id(ld2411s_component).set_config(
-            (int)id(motion_zone_min).state,
-            (int)id(motion_zone_max).state,
-            (int)id(presence_zone_min).state,
-            (int)id(presence_zone_max).state,
-            (int)id(unoccupied_timeout).state
-          );
+      - script.execute: send_config
 
   - platform: template
     name: "Reboot Radar"
     icon: mdi:restart
     entity_category: diagnostic
     on_press:
-      - lambda: |-
-          id(ld2411s_component).reboot();
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA3, 0x00, 0x04, 0x03, 0x02, 0x01]              # Reboot
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
 
   - platform: template
     name: "Factory Reset Radar"
     icon: mdi:restore
     entity_category: diagnostic
     on_press:
-      - lambda: |-
-          id(ld2411s_component).factory_reset();
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xA2, 0x00, 0x04, 0x03, 0x02, 0x01]              # Factory reset
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
 
   - platform: restart
     name: "Restart"
     icon: mdi:restart
     entity_category: diagnostic
+
+# ─── APPLY SETTINGS SCRIPT ───────────────────────────────────────────────────
+# Reads current slider values and sends a single Set Parameter command (0x0067)
+# to the radar. Unoccupied timeout is stored in seconds but sent as 100ms units
+# (multiply by 10) per the LD2411S UART protocol spec.
+script:
+  - id: send_config
+    then:
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # Enable config
+      - uart.write:
+          id: uart_bus
+          data: !lambda |-
+            int minmot  = (int)id(motion_zone_min).state;
+            int maxmot  = (int)id(motion_zone_max).state;
+            int minpr   = (int)id(presence_zone_min).state;
+            int maxpr   = (int)id(presence_zone_max).state;
+            uint16_t unocc = (uint16_t)(id(unoccupied_timeout).state * 10);
+            return std::vector<uint8_t>{
+              0xFD,0xFC,0xFB,0xFA, 0x20,0x00, 0x67,0x00,
+              0x00,0x00, (uint8_t)(maxmot & 0xFF), (uint8_t)(maxmot >> 8), 0x00,0x00,
+              0x01,0x00, (uint8_t)(minmot & 0xFF), (uint8_t)(minmot >> 8), 0x00,0x00,
+              0x02,0x00, (uint8_t)(maxpr  & 0xFF), (uint8_t)(maxpr  >> 8), 0x00,0x00,
+              0x03,0x00, (uint8_t)(minpr  & 0xFF), (uint8_t)(minpr  >> 8), 0x00,0x00,
+              0x04,0x00, (uint8_t)(unocc  & 0xFF), (uint8_t)(unocc  >> 8), 0x00,0x00,
+              0x04,0x03,0x02,0x01
+            };
+      - uart.write: [0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFE, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01]  # End config
 
 # ─── CRASH DIAGNOSTICS ───────────────────────────────────────────────────────
 # Exposes reset reason and heap health as HA entities.
