@@ -29,13 +29,14 @@ The LD2411S provides independent **motion** and **presence** detection with conf
 
 ## Screenshots
 
-| Sensors | Controls | Diagnostics |
-|:---:|:---:|:---:|
-| ![Sensors](docs/screenshot-sensors.jpeg) | ![Controls](docs/screenshot-controls.jpeg) | ![Diagnostics](docs/screenshot-diagnostics.jpeg) |
+| Sensors | Controls | Diagnostics | Configuration |
+|:---:|:---:|:---:|:---:|
+| ![Sensors](docs/screenshot-sensors.jpeg) | ![Controls](docs/screenshot-controls.jpeg) | ![Diagnostics](docs/screenshot-diagnostics.jpeg) | ![Configuration](docs/screenshot-config.jpeg) |
 
 **Sensors** — Live presence, motion, and target distance reported to Home Assistant.  
 **Controls** — Runtime zone configuration with sliders. Adjust and press Apply Settings — no reflash needed.  
-**Diagnostics** — Reset reason, heap health, loop time, and radar control buttons.
+**Diagnostics** — Reset reason, heap health, loop time, and radar control buttons.  
+**Configuration** — Bluetooth toggle to enable/disable onboard BLE without the HLKRadarTool app.
 
 ---
 
