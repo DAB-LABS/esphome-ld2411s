@@ -7,6 +7,7 @@ from esphome.const import (
     STATE_CLASS_MEASUREMENT,
 )
 
+CODEOWNERS = ["@DAB-LABS"]
 DEPENDENCIES = ["uart"]
 AUTO_LOAD = ["sensor", "binary_sensor"]
 

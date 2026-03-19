@@ -35,10 +35,11 @@ Check existing issues first to avoid duplicates.
 ```
 components/ld2411s/
 ├── __init__.py     # ESPHome component registration and YAML schema
-└── ld2411s.h       # C++ driver — UART parsing, entity updates, set_config()
+├── ld2411s.h       # C++ header — class declaration, setters
+└── ld2411s.cpp     # C++ driver — UART parsing, frame processing, entity updates
 ```
 
-The component uses a byte-cap pattern in `loop()` to yield to the FreeRTOS scheduler under ESP-IDF. Any changes to `loop()` should preserve this pattern.
+The component reads UART data in `loop()` and accumulates bytes until a valid frame delimiter is found (data frame: `0x55 0x55`, command response: `0x04 0x03 0x02 0x01`). A 64-byte safety cap discards malformed data to prevent unbounded memory growth. Zone configuration and radar commands are sent via raw `uart.write` sequences in the YAML — the C++ component only handles reading.
 
 ## Questions
 

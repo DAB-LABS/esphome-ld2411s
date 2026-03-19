@@ -183,7 +183,7 @@ The unoccupied timeout (0–6553 range) defaults to `box` in the example YAML, a
 
 ### Unoccupied Timeout — How It Works
 
-The **Unoccupied Timeout** entity is in **seconds** (0–6553 s). Internally, the component multiplies your value by 10 before sending it to the radar, because the protocol uses **100ms units** (range 0–65535 units). So a setting of `10 s` sends `100` to the hardware.
+The **Unoccupied Timeout** entity is in **seconds** (0–6553 s). The `send_config` script multiplies your value by 10 before sending it to the radar, because the LD2411S protocol uses **100ms units** (range 0–65535 units). So a setting of `10 s` sends `100` to the hardware.
 
 > Protocol unit = seconds × 10. Max supported value: 6553 s (~109 minutes).
 

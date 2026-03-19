@@ -1,0 +1,15 @@
+# Ensure consistent line endings
+* text=auto
+
+# Explicitly declare text files
+*.py text
+*.h text
+*.cpp text
+*.yaml text
+*.yml text
+*.md text
+
+# Binary files
+*.jpg binary
+*.jpeg binary
+*.png binary

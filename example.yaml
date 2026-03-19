@@ -142,10 +142,11 @@ number:
     name: "Unoccupied Timeout"
     id: unoccupied_timeout
     min_value: 0
-    max_value: 65535
+    max_value: 6553
     step: 1
-    initial_value: 5
+    initial_value: 10
     unit_of_measurement: s
+    mode: box
     optimistic: true
     restore_value: true
     entity_category: config
