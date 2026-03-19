@@ -7,6 +7,7 @@ esphome:
   friendly_name: "${friendly_name}"
 
 esp32:
+  board: esp32dev  # Change to match your board (e.g. nodemcu-32s, esp32-c3-devkitm-1)
   variant: esp32
   framework:
     type: esp-idf  # Recommended: better FreeRTOS integration, reliable WiFi stack, stricter watchdog
