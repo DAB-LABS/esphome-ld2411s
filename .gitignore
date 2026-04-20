@@ -20,3 +20,4 @@ secrets.yaml
 __pycache__/
 *.pyc
 *.pyo
+trash/
