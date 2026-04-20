@@ -1,0 +1,60 @@
+# esphome-ld2411s
+
+> esphome-ld2411s is an ESPHome external component for the HLK-LD2411S 24GHz mmWave
+> presence sensor by Hi-Link. It provides motion detection, stationary presence
+> detection, and target distance reporting as native Home Assistant entities. Zone
+> boundaries and unoccupied timeout are configurable at runtime from Home Assistant
+> without reflashing the ESP32.
+
+The component communicates with the sensor over UART at 256000 baud using the
+LD2411S serial protocol. It is implemented as an ESPHome external_component (C++/Python)
+and installed via a single external_components block in your ESPHome YAML -- no manual
+file copying required.
+
+Key behaviors:
+- Binary presence sensor: detects stationary occupancy (someone sitting still).
+- Binary motion sensor: detects active movement.
+- Distance sensor: reports target distance in cm.
+- Runtime zone config: motion zone min/max, presence zone min/max, and unoccupied
+  timeout are exposed as Home Assistant number entities. Adjust sliders, press Apply
+  Settings once -- no reflash needed.
+- Bluetooth toggle: enable or disable the sensor's onboard BLE from Home Assistant
+  without the HLKRadarTool app.
+- Radar reboot and factory reset buttons exposed as HA entities.
+
+Hardware compatibility:
+- Primary target: HLK-LD2411S
+- Also works on HLK-LD2411 (same hardware, same firmware, same UART protocol -- the
+  two are the same product sold under different model names for different markets).
+- Tested on ESP32-WROOM-32 with ESPHome 2026.2.4 and ESP-IDF framework.
+- Requires 5V on VIN -- the LD2411S will not produce UART output on 3.3V.
+
+What this component is NOT:
+- Not compatible with the LD2410, LD2410B, LD2410C, or LD2412 -- those are different
+  sensors with different protocols. Use the esphome-hlk-ld2410 component for those.
+- Not a standalone integration -- requires ESPHome and an ESP32 (or compatible) host.
+- Not available in the official ESPHome component registry -- installed as an
+  external_components source directly from this GitHub repository.
+
+## Repositories
+
+- [esphome-ld2411s (this repo)](https://github.com/DAB-LABS/esphome-ld2411s): Full
+  component source, example YAML, wiring guide, and hardware research notes.
+
+## Documentation
+
+- [README](https://github.com/DAB-LABS/esphome-ld2411s/blob/main/README.md): Full
+  installation and configuration guide, wiring diagram, zone configuration reference,
+  Bluetooth toggle usage, crash diagnostics, and known issues.
+- [example.yaml](https://github.com/DAB-LABS/esphome-ld2411s/blob/main/example.yaml):
+  Complete ESPHome YAML with all sensors, runtime zone controls, diagnostic entities,
+  and radar control buttons.
+
+## Optional
+
+- [LD2411 vs LD2411S Research](https://github.com/DAB-LABS/esphome-ld2411s/blob/main/docs/LD2411-vs-LD2411S-Research.md):
+  Hardware comparison, firmware investigation, UART protocol reference, OUT pin
+  behavior, and community findings. Relevant for contributors or users with LD2411
+  boards.
+- [DAB-LABS](https://github.com/DAB-LABS): Other open-source homelab and Home
+  Assistant projects by the same author.
