@@ -19,8 +19,12 @@ Key behaviors:
   timeout are exposed as Home Assistant number entities. Adjust sliders, press Apply
   Settings once -- no reflash needed.
 - Bluetooth toggle: enable or disable the sensor's onboard BLE from Home Assistant
-  without the HLKRadarTool app.
+  without the HLKRadarTool app. Uses a two-phase commit sequence (End config to flash,
+  then reboot inside a fresh config session). Toggling BT reboots the radar -- sensors
+  are unavailable for a few seconds while it restarts.
 - Radar reboot and factory reset buttons exposed as HA entities.
+- OUT pin: hardwired to GND in LD2411S firmware V1.01 and cannot be used as a presence
+  output. Do not connect it.
 
 Hardware compatibility:
 - Primary target: HLK-LD2411S
@@ -28,6 +32,11 @@ Hardware compatibility:
   two are the same product sold under different model names for different markets).
 - Tested on ESP32-WROOM-32 with ESPHome 2026.2.4 and ESP-IDF framework.
 - Requires 5V on VIN -- the LD2411S will not produce UART output on 3.3V.
+
+Known issues:
+- The radar can lock up after rapid repeated zone adjustments. Fix: press the Reboot
+  Radar button in Home Assistant. Best practice: adjust all zones, press Apply once,
+  then leave it.
 
 What this component is NOT:
 - Not compatible with the LD2410, LD2410B, LD2410C, or LD2412 -- those are different
@@ -48,7 +57,7 @@ What this component is NOT:
   Bluetooth toggle usage, crash diagnostics, and known issues.
 - [example.yaml](https://github.com/DAB-LABS/esphome-ld2411s/blob/main/example.yaml):
   Complete ESPHome YAML with all sensors, runtime zone controls, diagnostic entities,
-  and radar control buttons.
+  radar control buttons, and Bluetooth toggle.
 
 ## Optional
 
