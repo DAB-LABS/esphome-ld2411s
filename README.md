@@ -80,11 +80,11 @@ Add the `external_components` block to your ESPHome YAML:
 
 ```yaml
 external_components:
-  - source: github://DAB-LABS/esphome-ld2411s
+  - source: github://DAB-LABS/esphome-ld2411s@v1.1.1
     components: [ld2411s]
 ```
 
-ESPHome will fetch the component directly from this repository at build time.
+ESPHome will fetch the component directly from this repository at build time. The `@v1.1.1` pins a release, so a later change on `main` never alters your build. Drop the `@` part to follow `main` instead.
 
 ---
 
@@ -94,7 +94,7 @@ ESPHome will fetch the component directly from this repository at build time.
 
 ```yaml
 external_components:
-  - source: github://DAB-LABS/esphome-ld2411s
+  - source: github://DAB-LABS/esphome-ld2411s@v1.1.1
     components: [ld2411s]
 
 uart:
