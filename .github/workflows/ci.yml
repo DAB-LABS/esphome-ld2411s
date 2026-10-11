@@ -33,7 +33,9 @@ jobs:
           EOF
 
       - name: Build against this checkout
-        run: sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+        run: |
+          sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+          grep -n 'source:' ci.yaml
 
       - name: Validate config
         run: esphome config ci.yaml
@@ -65,7 +67,9 @@ jobs:
           EOF
 
       - name: Build against this checkout
-        run: sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+        run: |
+          sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+          grep -n 'source:' ci.yaml
 
       - name: Compile
         run: esphome compile ci.yaml
