@@ -6,6 +6,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.2.0] -- Unreleased
+
+### Fixed
+- **Target Distance froze on the last reading after you left** -- when the radar reports no target, distance now reads 0 cm instead of holding the old value until the next detection.
+
+### Changed
+- **Target Distance only updates when the value changes.** The radar sends about five readings a second; in bench testing more than half repeated the previous value. Home Assistant now sees roughly half the updates while someone is present, and none while the value holds.
+- Frames are read from the end of the buffer, so stray bytes ahead of a frame (after a boot or a UART glitch) no longer cost a reading.
+- `example.yaml` pins `@v1.2.0`.
+- CI now compiles this repository's own component (previously it fetched `main` from GitHub, so a pull request's changes were never built) and uses ESPHome 2026.9.1.
+
+---
+
 ## [1.1.1] -- 2026-10-10
 
 The v1.1.0 tag was cut before the Bluetooth fix landed, so anyone pinned to `@v1.1.0` got the release notes without the fix. This release tags what has been on `main` since March. No component behavior changes.
