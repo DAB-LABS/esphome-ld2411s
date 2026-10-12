@@ -13,7 +13,7 @@ esp32:
     type: esp-idf  # Recommended: better FreeRTOS integration, reliable WiFi stack, stricter watchdog
 
 external_components:
-  - source: github://DAB-LABS/esphome-ld2411s
+  - source: github://DAB-LABS/esphome-ld2411s@v1.2.0
     components: [ld2411s]
 
 # WiFi — fill in your credentials or use !secret

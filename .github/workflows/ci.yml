@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ESPHome
-        run: pip install esphome==2024.12.4
+        run: pip install esphome==2026.9.1
 
       - name: Write secrets stub
         run: |
@@ -32,8 +32,13 @@ jobs:
           ota_password: "testpassword"
           EOF
 
+      - name: Build against this checkout
+        run: |
+          sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+          grep -n 'source:' ci.yaml
+
       - name: Validate config
-        run: esphome config example.yaml
+        run: esphome config ci.yaml
 
   compile:
     name: Compile example.yaml
@@ -50,7 +55,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install ESPHome
-        run: pip install esphome==2024.12.4
+        run: pip install esphome==2026.9.1
 
       - name: Write secrets stub
         run: |
@@ -61,5 +66,10 @@ jobs:
           ota_password: "testpassword"
           EOF
 
+      - name: Build against this checkout
+        run: |
+          sed -E 's#source: github://DAB-LABS/esphome-ld2411s.*#source: components#' example.yaml > ci.yaml
+          grep -n 'source:' ci.yaml
+
       - name: Compile
-        run: esphome compile example.yaml
+        run: esphome compile ci.yaml

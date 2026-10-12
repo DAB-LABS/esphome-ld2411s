@@ -30,7 +30,7 @@ Hardware compatibility:
 - Primary target: HLK-LD2411S
 - Also works on HLK-LD2411 (same hardware, same firmware, same UART protocol -- the
   two are the same product sold under different model names for different markets).
-- Tested on ESP32-WROOM-32 with ESPHome 2026.2.4 and ESP-IDF framework.
+- Tested on ESP32-WROOM-32 with ESPHome 2026.9.1 and ESP-IDF framework.
 - Requires 5V on VIN -- the LD2411S will not produce UART output on 3.3V.
 
 Known issues:

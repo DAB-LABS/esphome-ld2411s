@@ -23,12 +23,14 @@ class LD2411SComponent : public Component, public uart::UARTDevice {
 
  protected:
   void process_packet_();
+  void publish_distance_(uint16_t cm);
 
   sensor::Sensor *distance_sensor_{nullptr};
   binary_sensor::BinarySensor *presence_sensor_{nullptr};
   binary_sensor::BinarySensor *motion_sensor_{nullptr};
 
   std::vector<uint8_t> bytes_;
+  int32_t last_distance_{-1};
 };
 
 }  // namespace ld2411s

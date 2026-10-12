@@ -5,7 +5,7 @@
 [![CI](https://github.com/DAB-LABS/esphome-ld2411s/actions/workflows/ci.yml/badge.svg)](https://github.com/DAB-LABS/esphome-ld2411s/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/DAB-LABS/esphome-ld2411s)](https://github.com/DAB-LABS/esphome-ld2411s/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![ESPHome](https://img.shields.io/badge/ESPHome-2026.2.4-blue)](https://esphome.io)
+[![ESPHome](https://img.shields.io/badge/ESPHome-2026.9.1-blue)](https://esphome.io)
 
 An ESPHome external component for the **HLK-LD2411S** 24GHz mmWave presence sensor by Hi-Link.
 
@@ -23,7 +23,7 @@ The LD2411S provides independent **motion** and **presence** detection with conf
 - Apply settings at runtime from Home Assistant — no reflash required
 - Radar reboot and factory reset buttons
 - **Bluetooth toggle** — enable/disable onboard BLE from Home Assistant
-- Tested on ESP32-WROOM-32 with ESPHome 2026.2.4 and ESP-IDF framework
+- Tested on ESP32-WROOM-32 with ESPHome 2026.9.1 and ESP-IDF framework
 
 ---
 
@@ -80,11 +80,11 @@ Add the `external_components` block to your ESPHome YAML:
 
 ```yaml
 external_components:
-  - source: github://DAB-LABS/esphome-ld2411s@v1.1.1
+  - source: github://DAB-LABS/esphome-ld2411s@v1.2.0
     components: [ld2411s]
 ```
 
-ESPHome will fetch the component directly from this repository at build time. The `@v1.1.1` pins a release, so a later change on `main` never alters your build. Drop the `@` part to follow `main` instead.
+ESPHome will fetch the component directly from this repository at build time. The `@v1.2.0` pins a release, so a later change on `main` never alters your build. Drop the `@` part to follow `main` instead.
 
 ---
 
@@ -94,7 +94,7 @@ ESPHome will fetch the component directly from this repository at build time. Th
 
 ```yaml
 external_components:
-  - source: github://DAB-LABS/esphome-ld2411s@v1.1.1
+  - source: github://DAB-LABS/esphome-ld2411s@v1.2.0
     components: [ld2411s]
 
 uart:
@@ -347,9 +347,9 @@ sensor:
 
 | Component | Version |
 |---|---|
-| ESPHome | 2026.2.4 |
-| ESP-IDF | 5.5.2 |
-| Home Assistant | 2026.2.3 |
+| ESPHome | 2026.9.1 |
+| ESP-IDF | 5.5.5 |
+| Home Assistant | 2026.9.4 |
 | Board | ESP32-WROOM-32 (rev 3.1, dual-core, 4MB flash) |
 | Sensor | HLK-LD2411S |
 
