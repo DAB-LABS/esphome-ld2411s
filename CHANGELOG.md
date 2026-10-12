@@ -6,7 +6,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [1.2.0] -- Unreleased
+## [1.2.0] -- 2026-10-11
 
 ### Fixed
 - **Target Distance froze on the last reading after you left** -- when the radar reports no target, distance now reads 0 cm instead of holding the old value until the next detection.
